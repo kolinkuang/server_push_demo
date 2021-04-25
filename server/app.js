@@ -2,7 +2,7 @@ const fs = require('fs');
 const http = require('http');
 const EventEmitter = require('events');
 const WebSocketServer = require('websocket').server;
-const port = process.env.PORT || 8080;
+const port = +process.env.PORT || 8080;
 
 const EVENT = new EventEmitter();
 const MSG_POST = Symbol('msg_post');
@@ -13,29 +13,29 @@ const app = http.createServer((req, res) => {
         req.url = '/index';
     }
 
-    let path = req.url;
+    const path = req.url;
 
     /* process post message */
     if (/^\/post/.test(req.url) && req.method === 'POST') {
-        let buffers = [];
+        const buffers = [];
 
         // listening on incoming data
         req.on('data', trunk => {
-            buffers.push(trunk);  
+            buffers.push(trunk);
         }).on('end', () => {
-            let buffer = Buffer.concat(buffers).toString();
-            let msg = buffer.split('=')[1];
-            let data = {
+            const buffer = Buffer.concat(buffers).toString();
+            const msg = buffer.split('=')[1];
+            const data = {
                 msg,
                 st: (new Date()).toLocaleTimeString()
             };
-    
+
             // emit msg_post event to trigger listener
             EVENT.emit(MSG_POST, data);
 
             // push data into array, wait for query
             MSG_TO_SEND.push(data);
-    
+
             // response to client
             fs.createReadStream(`../public${path}.html`).pipe(res);
         });
@@ -47,7 +47,7 @@ const app = http.createServer((req, res) => {
 
     /* interval polling */
     else if (/^\/interval_polling$/.test(path)) {
-        let data = MSG_TO_SEND.splice(0);
+        const data = MSG_TO_SEND.splice(0);
 
         res.setHeader('content-type', 'application/json');
         res.end(JSON.stringify(data));
@@ -57,14 +57,14 @@ const app = http.createServer((req, res) => {
     /* process long polling (iframe) */
     else if (/^\/long_iframe$/.test(path)) {
         const iframeSend = data => {
-            let script = `<script type="text/javascript">
+            const script = `<script type="text/javascript">
                             parent.showMsg(${JSON.stringify(data)})
                         </script>`;
             res.write(script);
         };
 
         res.setHeader('connection', 'keep-alive');
-        res.setHeader('content-type', 'text/html; charset=utf-8');        
+        res.setHeader('content-type', 'text/html; charset=utf-8');
 
         EVENT.addListener(MSG_POST, iframeSend);
 
@@ -95,7 +95,7 @@ const app = http.createServer((req, res) => {
     /* server sent event */
     else if (/^\/sse$/.test(path)) {
         const sseSend = data => {
-            res.write('retry:10000\n');            
+            res.write('retry:10000\n');
             res.write('event:my_msg\n');
             res.write(`data:${JSON.stringify(data)}\n\n`);
         };
@@ -117,7 +117,7 @@ const app = http.createServer((req, res) => {
     }
     /** **/
 
-    /* static js resouce */
+    /* static js resource */
     else if (/public.*\.js/.test(path)) {
         res.setHeader('content-type', 'text/javascript; charset=utf-8');
         fs.createReadStream(`..${path}`).pipe(res);
@@ -160,20 +160,20 @@ const ws = new WebSocketServer({
 });
 
 ws.on('request', req => {
-    let connection = req.accept(null, req.origin);
+    const connection = req.accept(null, req.origin);
 
-    let wsSend = data => {
+    const wsSend = data => {
         connection.send(JSON.stringify(data));
     };
 
     connection.on('message', msg => {
         console.log(msg);
     });
-    connection.on('close', con => {
+    connection.on('close', () => {
         console.log('websocket close');
-        EVENT.removeListener(MSG_POST, wsSend);
+        EVENT.off(MSG_POST, wsSend);
     });
 
-    EVENT.addListener(MSG_POST, wsSend);
+    EVENT.on(MSG_POST, wsSend);
 });
 /** **/
