@@ -15,7 +15,7 @@ const app = http.createServer((req, res) => {
 
     const path = req.url;
 
-    /* process post message */
+    /** process post message **/
     if (/^\/post/.test(req.url) && req.method === 'POST') {
         const buffers = [];
 
@@ -45,7 +45,7 @@ const app = http.createServer((req, res) => {
     }
     /** **/
 
-    /* interval polling */
+    /** interval polling **/
     else if (/^\/interval_polling$/.test(path)) {
         const data = MSG_TO_SEND.splice(0);
 
@@ -54,7 +54,7 @@ const app = http.createServer((req, res) => {
     }
     /** **/
 
-    /* process long polling (iframe) */
+    /** process long polling (iframe) **/
     else if (/^\/long_iframe$/.test(path)) {
         const iframeSend = data => {
             const script = `<script type="text/javascript">
@@ -75,7 +75,7 @@ const app = http.createServer((req, res) => {
     }
     /** **/
 
-    /* process long polling (comet) */
+    /** process long polling (comet) **/
     else if (/^\/longpolling$/.test(path)) {
         const longPollingSend = data => {
             res.end(JSON.stringify(data));
@@ -92,7 +92,7 @@ const app = http.createServer((req, res) => {
     }
     /** **/
 
-    /* server sent event */
+    /** server sent event **/
     else if (/^\/sse$/.test(path)) {
         const sseSend = data => {
             res.write('retry:10000\n');
@@ -117,7 +117,7 @@ const app = http.createServer((req, res) => {
     }
     /** **/
 
-    /* static js resource */
+    /** static js resource **/
     else if (/public.*\.js/.test(path)) {
         res.setHeader('content-type', 'text/javascript; charset=utf-8');
         fs.createReadStream(`..${path}`).pipe(res);
